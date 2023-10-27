@@ -86,7 +86,7 @@ const ServerInfo           = RomeoDFT.v0_5.ServerInfo
 const ShouldRerun          = RomeoDFT.v0_2.ShouldRerun
 const WannierSettings      = RomeoDFT.v0_5.WannierSettings
 const RandomSearcher       = RomeoDFT.v0_5.RandomSearcher
-const HPSettings           = RomeoDFT.v0_2.HPSettings
+const HPSettings           = RomeoDFT.v0_3.HPSettings
 const PPSettings           = RomeoDFT.v0_6.PPSettings
 const ElectrideSettings    = RomeoDFT.v0_6.ElectrideSettings
 

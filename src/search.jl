@@ -519,6 +519,8 @@ This is the backend method used for the `romeo searcher create` from the command
 - `hp_conv_thr_chi=1e-4`: `conv_thr_chi` in hp.x input
 - `hp_find_atpert=2`: `find_atpert` in hp.x input
 - `hp_U_conv_thr=0.1`: threshold for self-consistency of U
+- `hp_ethr_nscf=<1e-11>`: Threshold for the convergence of eigenvalues during non-self-consistent-field (NSCF) calculation
+
 
 """
 function setup_search(name, scf_file, structure_file = scf_file;
@@ -547,6 +549,7 @@ function setup_search(name, scf_file, structure_file = scf_file;
                       hp_conv_thr_chi = 1e-4,
                       hp_find_atpert = 2,
                       hp_U_conv_thr = 0.1,
+		      hp_ethr_nscf = 1e-11,
                       use_input_magnetization = false,
                       kwargs...)
     dir = searchers_dir(name)
@@ -598,7 +601,7 @@ function setup_search(name, scf_file, structure_file = scf_file;
         l[base_e] = relset
     end
 
-    hpset = HPSettings(hp_nq, hp_conv_thr_chi, hp_find_atpert, hp_U_conv_thr, 15.0)
+    hpset = HPSettings(hp_nq, hp_conv_thr_chi, hp_find_atpert, hp_U_conv_thr, 15.0, hp_ethr_nscf)
     if hp_unique
         l[unique_e] = hpset
     end

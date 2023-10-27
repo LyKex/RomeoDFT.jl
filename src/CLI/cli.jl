@@ -167,6 +167,7 @@ module searcher
     - `--hp-conv-thr-chi=<1e-4>`: `conv_thr_chi` in hp.x input
     - `--hp-find-atpert=<2>`: `find_atpert` in hp.x input
     - `--hp-U-conv-thr=<0.1>`: threshold for self-consistency of U
+    - `--hp-ethr-nscf=<1e-11>`: Threshold for the convergence of eigenvalues during non-self-consistent-field (NSCF) calculation
     """
     @cast function create(name::String, scf_file::Comonicon.Arg.Path;
                           structure_file::Comonicon.Arg.Path = scf_file,
@@ -203,6 +204,7 @@ module searcher
                           hp_conv_thr_chi::Float64 = 1e-6,
                           hp_find_atpert::Int = 1,
                           hp_U_conv_thr::Float64 = 0.1,
+			  hp_ethr_nscf::Float64 = 1e-11
                           )
                           
         l = setup_search(name, abspath(scf_file.content), abspath(structure_file.content);
@@ -233,6 +235,7 @@ module searcher
                       hp_conv_thr_chi = hp_conv_thr_chi,
                       hp_find_atpert  = hp_find_atpert,
                       hp_U_conv_thr   = hp_U_conv_thr,
+		      hp_ethr_nscf    = hp_ethr_nscf,
                       use_input_magnetization = use_input_magnetization)
         return orchestrator_submit(l; verbosity=verbosity)
     end

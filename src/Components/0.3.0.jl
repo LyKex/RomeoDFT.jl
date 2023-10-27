@@ -52,5 +52,21 @@ A flat representation of a bandstructure to be used with [`sssp_distance`](@ref)
     bands::Vector{Float64}
 end
 
+"""
+    HPSettings
+
+Holds the settings for a HP calculation.
+"""
+@pooled_component Base.@kwdef struct HPSettings <: PostProcessSettings
+    nq::NTuple{3, Int} = (2,2,2)
+    conv_thr_chi::Float64 = 1e-6
+    find_atpert::Int = 1
+    U_conv_thr::Float64 = 0.1
+    U_max::Float64 = 15.0
+    ethr_nscf::Float64 = 1e-11
+end
+Base.convert(::Type{HPSettings}, x::v0_2.HPSettings) = HPSettings(x.nq, x.conv_thr_chi, x.find_atpert, x.U_conv_thr, 15.0, x.ethr_nscf)
+
+
 
 end

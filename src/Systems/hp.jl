@@ -18,7 +18,8 @@ function Overseer.update(::HPCreator, m::AbstractLedger)
                                                                              :nq2 => e.nq[2],
                                                                              :nq3 => e.nq[3],
                                                                              :conv_thr_chi => e.conv_thr_chi,
-                                                                             :find_atpert  => e.find_atpert)))
+                                                                             :find_atpert  => e.find_atpert,
+									     :ethr_nscf    => e.ethr_nscf)))
         push!(e.job, hp_calc)
     end
 end
