@@ -887,6 +887,8 @@ remove the [`Entity`](@ref) from the `datatypes` components.
 """
 function should_rerun(m, e, datatypes...)
     rer = m[ShouldRerun]
+    # if e is already labed ShouldRerun,
+    # update the components_to_replace field
     if e in rer
         for d in datatypes
             push!(rer[e], d)
@@ -1039,8 +1041,10 @@ end
 """
     create_child!(l::AbstractLedger, parent_entity, components...)
 
-Creates a child from the `parent_entity`, using its [`Generation`](@ref), the state in its [`Results`](@ref) for [`Trail`](@ref), its [`Template`](@ref),
-and any other `Component` in `components`.
+Creates a child from the `parent_entity`, using its [`Generation`](@ref),
+the state in its [`Results`](@ref) for [`Trail`](@ref) (unless parent_entity is BaseCase),
+its [`Template`](@ref), and any other `Component` in `components`. Note that `components`
+will override the same components in `parent_entity`, if any.
 """
 function create_child!(l::AbstractLedger, parent_entity, components...)
     gen = parent_entity in l[Generation] ? l[Generation][parent_entity] :
@@ -1052,6 +1056,7 @@ function create_child!(l::AbstractLedger, parent_entity, components...)
         cT = typeof(c)
 
         comp = l[cT]
+        # only inherit components that is subtype of PostProcessSettings
         if ppe in comp || !(cT <: PostProcessSettings)
             continue
         end
@@ -1063,13 +1068,23 @@ function create_child!(l::AbstractLedger, parent_entity, components...)
         end
     end
 
+    # add parent_eneity to ppe's Parents component
     if ppe ∉ l[Parents]
         l[ppe] = Parents(Entity(parent_entity))
     else
         push!(l[ppe][Parents], Entity(parent_entity))
     end
 
-    if ppe ∉ l[Trial]
+    # add ppe to parent_entity's Children component
+    if parent_entity ∈ l[Children]
+        push!(l[Children][parent_entity], ppe)
+    else
+        l[Children][parent_entity] = Children(ppe)
+    end
+
+    # Not to add Trial if parent is BaseCase.
+    # BaseCase could rerun for self-consistent hp cycle.
+    if ppe ∉ l[Trial] && parent_entity ∉ l[BaseCase]
         l[ppe] = parent_entity in l[Results] && l[Results][parent_entity].converged ?
                  Trial(l[Results][parent_entity].state, PostProcess) :
                  Trial(l[Trial][parent_entity].state, PostProcess)
@@ -1083,11 +1098,6 @@ function create_child!(l::AbstractLedger, parent_entity, components...)
         l[ppe] = deepcopy(l[Template][parent_entity])
     end
 
-    if parent_entity ∈ l[Children]
-        push!(l[Children][parent_entity], ppe)
-    else
-        l[Children][parent_entity] = Children(ppe)
-    end
 
     return ppe
 end
@@ -1095,7 +1105,9 @@ end
 """
     create_postprocess_child!(l::AbstractLedger, parent_entity, components...)
 
-First calls [`create_child`](@ref), then will look at the components held by the [`Unique`](@ref) entity to decide what other postprocessing components should be added."""
+First calls [`create_child`](@ref), then will look at the components held by
+the [`Unique`](@ref) entity to decide what other postprocessing components should be added.
+"""
 function create_postprocess_child!(l, parent_entity, comps...)
     ppe = create_child!(l, parent_entity, comps...)
     unique_e = l[entity(l[Unique], 1)]

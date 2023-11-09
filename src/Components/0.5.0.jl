@@ -28,7 +28,7 @@ Base.convert(::Type{Trial}, x::v0_4.Trial) = Trial(x.state, Unknown)
 Signals the calculation that represents the base \"vanilla\" DFT + U case that is used to determine
 for example the number of electrons on the magnetic ions.
 """
-@component struct BaseCase end
+@component struct BaseCase <: PostProcessSettings end
 
 """
     TimingInfo

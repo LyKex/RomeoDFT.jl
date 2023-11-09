@@ -65,7 +65,7 @@ Holds the settings for a HP calculation.
     U_max::Float64 = 15.0
     ethr_nscf::Float64 = 1e-11
 end
-Base.convert(::Type{HPSettings}, x::v0_2.HPSettings) = HPSettings(x.nq, x.conv_thr_chi, x.find_atpert, x.U_conv_thr, 15.0, x.ethr_nscf)
+Base.convert(::Type{HPSettings}, x::v0_2.HPSettings) = HPSettings(x.nq, x.conv_thr_chi, x.find_atpert, x.U_conv_thr, x.U_max, 1e-11)
 
 
 

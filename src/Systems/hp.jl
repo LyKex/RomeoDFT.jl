@@ -55,6 +55,10 @@ function getfirst_in_outputs(output, name)
     end
 end
 
+"""
+Run the second step of two step scf for magnetic insulators, as is required by hp.
+Return if such calculation is possible.
+"""
 function setup_scf_for_hp!(m, e, o, insulating_from_hp=false)
     if any(x->x.name == "scf_for_U", e.job.calculations)
         m[e] = Error(e, "Already ran with scf_for_U and still errors.")
@@ -82,9 +86,10 @@ function setup_scf_for_hp!(m, e, o, insulating_from_hp=false)
         n_ks === nothing && return false
         
         suppress() do 
-            scf_calc[:tot_magnetization] = round(Int, totmag)
+            scf_calc[:tot_magnetization] = abs(round(Int, totmag))
             scf_calc[:occupations] = "fixed"
             scf_calc[:nbnd] = n_ks
+            scf_calc[:nspin] = 2
             scf_calc[:startingpot] = "file"
             scf_calc[:startingwfc] = "file"
             delete!(scf_calc, :degauss)
@@ -94,6 +99,9 @@ function setup_scf_for_hp!(m, e, o, insulating_from_hp=false)
         for a in e.job.structure.atoms
             a.magnetization = [0,0,0]
         end
+    else
+        m[e] = Error("failed one step scf but not insulating materials!")
+        return false
     end
 
     
@@ -116,7 +124,8 @@ function Overseer.update(::HPProcessor, m::AbstractLedger)
         if get(o["hp"], :error, false)
             
             if o["hp"][:fermi_dos] < 0.1
-                # We assume then it's insulating
+                # We assume first the material is metallic and if HP returns error with
+                # "Fermi level shift is too small", assume then it's insulating.
                 if setup_scf_for_hp!(m, e, o, true)
                     log(e, "HP: Fermi level shift 0. Creating insulating, 2 step HP job")
                     # Nothing to pop since we just want to rerun starting from the new scf
@@ -154,7 +163,6 @@ function Overseer.update(::HPProcessor, m::AbstractLedger)
                 log(e, "HP failed, creating a scf to run before it and try again")
                 # This is to make sure that the last structure is used e.g. when we're vcrelaxing the base case
                 if RelaxResults in m && e in m[RelaxResults]
-                    # This is to make sure that the last structure is used e.g. when we're vcrelaxing the base case
                     Structures.update_geometry!(e.job.structure, m[RelaxResults][e].final_structure)
                 end
                 should_rerun(m, e)
