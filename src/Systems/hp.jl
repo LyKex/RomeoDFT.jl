@@ -100,7 +100,7 @@ function setup_scf_for_hp!(m, e, o, insulating_from_hp=false)
             a.magnetization = [0,0,0]
         end
     else
-        m[e] = Error("failed one step scf but not insulating materials!")
+        m[e] = Error(e, "failed one step scf but not insulating materials!")
         return false
     end
 
