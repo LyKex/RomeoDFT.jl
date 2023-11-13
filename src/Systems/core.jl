@@ -198,6 +198,12 @@ function Overseer.update(::JobSubmitter, m::AbstractLedger)
 
         set_server_pseudos!(e.job, server, m)
 
+        # TODO hot fix because local_save will remove nspin in rm_tmp_flags!
+        # need to update DFControl
+        if "scf_for_U" in map(c->c.name, e.job.calculations)
+            e.job["scf_for_U"][:nspin] = 2
+        end
+
         suppress() do
             priority = e in m[NSCFSettings] || e in m[BaseCase] ? server_info.priority + 1 :
                        server_info.priority

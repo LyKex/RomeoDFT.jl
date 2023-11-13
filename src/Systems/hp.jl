@@ -80,27 +80,28 @@ function setup_scf_for_hp!(m, e, o, insulating_from_hp=false)
         
         totmags = getfirst_in_outputs(o, :total_magnetization)
         totmags === nothing && return false
-        totmag = totmags[end]
+        totmag = abs(round(Int, totmags[end]))
         
         n_ks = getfirst_in_outputs(o, :n_KS_states)
         n_ks === nothing && return false
         
         suppress() do 
-            scf_calc[:tot_magnetization] = abs(round(Int, totmag))
-            scf_calc[:occupations] = "fixed"
-            scf_calc[:nbnd] = n_ks
-            scf_calc[:nspin] = 2
-            scf_calc[:startingpot] = "file"
-            scf_calc[:startingwfc] = "file"
+            scf_calc[:tot_magnetization] = totmag
+            scf_calc[:occupations]       = "fixed"
+            scf_calc[:nbnd]              = n_ks
+            scf_calc[:nspin]             = 2
+            scf_calc[:startingpot]       = "file"
+            scf_calc[:startingwfc]       = "file"
             delete!(scf_calc, :degauss)
             delete!(scf_calc, :smearing)
         end
-        
+
         for a in e.job.structure.atoms
             a.magnetization = [0,0,0]
         end
+        log(e, "Created scf_for_U with tot_magnetization = $totmag and nbnd = $n_ks")
     else
-        m[e] = Error(e, "failed one step scf but not insulating materials!")
+        m[e] = Error(e, "Materials is not insulating!")
         return false
     end
 
@@ -127,7 +128,7 @@ function Overseer.update(::HPProcessor, m::AbstractLedger)
                 # We assume first the material is metallic and if HP returns error with
                 # "Fermi level shift is too small", assume then it's insulating.
                 if setup_scf_for_hp!(m, e, o, true)
-                    log(e, "HP: Fermi level shift 0. Creating insulating, 2 step HP job")
+                    log(e, "HP: Fermi level shift 0. Creating second step scf before HP job")
                     # Nothing to pop since we just want to rerun starting from the new scf
                     if RelaxResults in m && e in m[RelaxResults]
                         # This is to make sure that the last structure is used e.g. when we're vcrelaxing the base case
@@ -158,9 +159,8 @@ function Overseer.update(::HPProcessor, m::AbstractLedger)
             should_rerun(m, e, new_template)
             
         elseif !haskey(o["hp"], :Hubbard_U)
-            
+            log(e, "HP failed, assuming material is insulating, creating a scf to run before it and try again")
             if setup_scf_for_hp!(m, e, o)
-                log(e, "HP failed, creating a scf to run before it and try again")
                 # This is to make sure that the last structure is used e.g. when we're vcrelaxing the base case
                 if RelaxResults in m && e in m[RelaxResults]
                     Structures.update_geometry!(e.job.structure, m[RelaxResults][e].final_structure)
@@ -176,6 +176,7 @@ function Overseer.update(::HPProcessor, m::AbstractLedger)
             
             continue
         else
+            # TODO check if HP converges, if not update HPSetting and rerun
             hub_ats = o["hp"][:Hubbard_U]
             m[e] = HPResults(hub_ats)
 
