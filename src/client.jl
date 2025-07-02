@@ -27,7 +27,14 @@ function start_orchestrator()
         t = mtime(config_path("log.log"))
         julia_cmd = VERSION.minor >= 9 ? [joinpath(Sys.BINDIR, "julia"), "--heap-size-hint=2.5G"] : [joinpath(Sys.BINDIR, "julia")]
         
-        r = run(Cmd(Cmd([julia_cmd..., "--project=$(config_path())", "--startup-file=no","-t", "auto", "-e",  "using Revise; using Plots; using LaTeXStrings; using UnicodePlots; using RomeoDFT; RomeoDFT.run_orchestrator()", "&>", config_path("log.log")]), detach=true, ignorestatus=true), wait=false)
+        r = run(Cmd(Cmd([julia_cmd...,
+            "--project=$(config_path())",
+            "--startup-file=no",
+            "-t",
+            "auto",
+            "-e",
+            "using Revise; using Plots; using LaTeXStrings; using UnicodePlots; using RomeoDFT; RomeoDFT.run_orchestrator()",
+            "&>", config_path("log.log")]), detach=true, ignorestatus=true), wait=false)
         p = ProgressMeter.ProgressUnknown("Starting orchestrator. This takes a while the first time..."; spinner=true)
 
         while process_running(r) && mtime(config_path("log.log")) == t

@@ -20,10 +20,13 @@ end
 if !haskey(ENV, "CI")
     Pkg.activate(CONFIG_DIR)
     Pkg.add(["Plots","LaTeXStrings","UnicodePlots","Revise"])
-    if !haskey(Pkg.dependencies(), UUIDs.UUID("87c4fabc-abb4-4467-86a6-1748b5c259fe"))
-        #Pkg.add(url="git@github.com:LyKex/RomeoDFT.jl.git")
-    end
-    Pkg.update()
+    Pkg.add(url="https://github.com/LyKex/DFControl.jl")
+    Pkg.add(url="https://github.com/LyKex/RemoteHPC.jl")
+    Pkg.add(url="https://github.com/LyKex/RomeoDFT.jl")
+    # if !haskey(Pkg.dependencies(), UUIDs.UUID("87c4fabc-abb4-4467-86a6-1748b5c259fe"))
+    #     Pkg.add(url="git@github.com:LyKex/RomeoDFT.jl.git")
+    # end
+    Pkg.instantiate()
 
     if !occursin("config/RomeoDFT", pwd())
         Pkg.activate(".")
