@@ -174,6 +174,7 @@ module searcher
     """
     @cast function create(name::String, scf_file::Comonicon.Arg.Path;
                           mode::String = "search",
+                          max_concurrent_trials::Int = 50,
                           structure_file::Comonicon.Arg.Path = scf_file,
                           primitive::Bool = false,
                           supercell_a::Int = 1,
@@ -213,6 +214,7 @@ module searcher
         l = setup_search(name, abspath(scf_file.content), abspath(structure_file.content);
                       mode                   = mode,
                       primitive              = primitive,
+                      max_concurrent_trials  = max_concurrent_trials,
                       supercell              = [supercell_a, supercell_b, supercell_c],
                       sleep_time             = sleep_time,
                       nrand                  = nrand,

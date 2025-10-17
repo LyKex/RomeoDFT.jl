@@ -228,6 +228,7 @@ function Overseer.update(::JobSubmitter, m::AbstractLedger)
         suppress() do
             priority = e in m[NSCFSettings] || e in m[BaseCase] ? server_info.priority + 1 :
                        server_info.priority
+            @debug "submitting job entity $(e.e.id)"
             submit(e.job; fillexecs = false, versioncheck = false,
                           priority = priority)
         end

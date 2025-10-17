@@ -3,9 +3,57 @@ function Overseer.requested_components(::RandomTrialGenerator)
     return (RandomSearcher, Intersection, BaseCase)
 end
 
-function rand_trial(l::Searcher, n=1)
-    base_e     = entity(l[BaseCase], 1)
-    base_state = l[Results][base_e].state
+function Overseer.update(::RandomTrialGenerator, m::AbstractLedger)
+    # should we throw error if either is empty?
+    if isempty(m[RandomSearcher]) || isempty(m[BaseCase])
+        return
+    end
+
+    # check if there is still random search budget
+    random_search = singleton(m, RandomSearcher)
+    n_random = length(filter(e->e.origin==RandomMixed, m[Trial]))
+    if n_random >= random_search.nsearchers
+        return
+    end
+
+    # at least one base case calculation is finished
+    # TODO is converged?
+    base_e = filter(@entities_in(m, BaseCase && Results)) do e
+        all_children_done(m, e) && !isempty(m[Results][e].state.occupations)
+    end
+    if isempty(base_e)
+        @debug "Base cases not finished, exit RadomTrialGenerator without creating trials"
+        return
+    else
+        base_e = base_e[1]
+    end
+    
+    base_state = m[Results][base_e].state
+    if isempty(base_state.occupations)
+        @error "Something went wrong with the base case calculation"
+        return
+    end
+    rand_search_e = entity(m[RandomSearcher], 1)
+
+    maxgen = maximum_generation(m)
+    n_new = max_new(m)
+    for trial in rand_trial(m, base_state; n=n_new)
+        e = add_search_entity!(m, rand_search_e,
+                               trial,
+                               Generation(maxgen))
+                               
+        if Hybrid in m && length(m[Hybrid]) != 0
+            m[e] = Hybrid()
+        end
+        n_new += 1
+        
+    end
+    if n_new != 0
+        @debug "$n_new random trials at Generation($(maxgen))."
+    end
+end
+
+function rand_trial(l::Searcher, base_state; n=1)
     nelec      = round.(Int, base_state.totoccs)
     norb       = size.(base_state.occupations, 1)
 
@@ -76,51 +124,4 @@ function rand_trial(n_orb_per_at::Vector, n_elec_per_at::Vector)
     return Trial(State(occs), RandomMixed)
 end
 
-function Overseer.update(::RandomTrialGenerator, m::AbstractLedger)
-    # should we throw error if either is empty?
-    if isempty(m[RandomSearcher]) || isempty(m[BaseCase])
-        return
-    end
 
-    # check if there is still random search budget
-    random_search = singleton(m, RandomSearcher)
-    n_random = length(filter(e->e.origin==RandomMixed, m[Trial]))
-    if n_random >= random_search.nsearchers
-        return
-    end
-
-    # at least one base case calculation is finished
-    base_e = filter(@entities_in(m, BaseCase)) do e
-        all_children_done(m, e) && e ∈ m[Results] && !isempty(m[Results][e].state.occupations)
-    end
-    if isempty(base_e)
-        @debug "Base cases not finished, exit RadomTrialGenerator without creating trials"
-        return
-    else
-        base_e = base_e[1]
-    end
-    
-    base_state = m[Results][base_e].state
-    if isempty(base_state.occupations)
-        @error "Something went wrong with the base case calculation"
-        return
-    end
-    rand_search_e = entity(m[RandomSearcher], 1)
-
-    maxgen = maximum_generation(m)
-    n_new = max_new(m)
-    for trial in rand_trial(m, n_new)
-        e = add_search_entity!(m, rand_search_e,
-                               trial,
-                               Generation(maxgen))
-                               
-        if Hybrid in m && length(m[Hybrid]) != 0
-            m[e] = Hybrid()
-        end
-        n_new += 1
-        
-    end
-    if n_new != 0
-        @debug "$n_new random trials at Generation($(maxgen))."
-    end
-end
